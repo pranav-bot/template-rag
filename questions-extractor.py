@@ -13,6 +13,8 @@ import json
 from dotenv import load_dotenv
 from pydantic import Field, BaseModel, RootModel
 from langchain_core.output_parsers import PydanticOutputParser
+
+from utils import split_document
 # from vectordb import store_chunks_in_vector_db, retrieve_from_vector_db
 
 load_dotenv()
@@ -71,14 +73,6 @@ def content_extraction_node(state: AgentState) -> AgentState:
     # state["content_size"] = len(state["content"])
 
     return state
-
-def split_document(content: str, chunk_size=2000, chunk_overlap=200) -> List[str]:
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", ".", " "]
-    )
-    return splitter.split_text(content)
 
 def splitter_node(state: AgentState) -> AgentState:
     print(2)

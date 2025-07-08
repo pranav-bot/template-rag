@@ -5,19 +5,12 @@ from dotenv import load_dotenv
 from typing import List, Optional, Dict
 import os
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+from utils import split_document
 load_dotenv()
 
 
 embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-
-def split_document(content: str, chunk_size=2000, chunk_overlap=200) -> List[str]:
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", ".", " "]
-    )
-    return splitter.split_text(content)
-
 
 # 1. Accept text content directly, split, and store in vector DB
 def store_chunks_in_vector_db(content: str, metadata: Optional[Dict] = None):
