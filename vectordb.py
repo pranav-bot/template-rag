@@ -1,5 +1,5 @@
 from langchain.vectorstores import FAISS
-from langchain.embeddings import GoogleGenerativeAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.documents import Document
 from dotenv import load_dotenv
 from typing import List, Optional, Dict

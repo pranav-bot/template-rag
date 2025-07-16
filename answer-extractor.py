@@ -1,5 +1,6 @@
 from typing import List, TypedDict
 from langchain_google_genai import ChatGoogleGenerativeAI
+from docxparser import read_docx_with_tables
 from vectordb import  store_chunks_in_vector_db, retrieve_from_vector_db
 from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, START, END
@@ -89,10 +90,9 @@ if __name__ == "__main__":
     # Example usage
     state = AgentState(
         questions=[
-            QuestionState(question="What is the total investment amount?", answer=""),
-            QuestionState(question="What are the key terms of the investment?", answer="")
+            QuestionState(question="What are the voting rights?", answer=""),
         ],
-        content="This is a sample content from a legal document that contains relevant information."
+        content=read_docx_with_tables("SHA Draft-Investor friendly(2).docx")  # Replace with your actual file path
     )
     result = app.invoke(state)
     print("\nExtracted Answers:")
