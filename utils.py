@@ -2,7 +2,7 @@ from typing import List
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from docxparser import read_docx_with_tables
 
-content = read_docx_with_tables("SHA Draft-Investor friendly(2).docx")  # Replace with your actual file path
+# content = read_docx_with_tables("SHA Draft-Investor friendly(2).docx")  # Replace with your actual file path
 
 
 def split_document(content: str, chunk_size=2000, chunk_overlap=200) -> List[str]:
@@ -13,4 +13,4 @@ def split_document(content: str, chunk_size=2000, chunk_overlap=200) -> List[str
     )
     return splitter.split_text(content)
 
-print(split_document(content)[1])
+# print(split_document(content)[1])

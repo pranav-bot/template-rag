@@ -20,9 +20,9 @@ def read_pdf_with_tables(file_path):
 
     return '\n'.join(full_text)
 
-# Example usage
-if __name__ == "__main__":
-    file_path = "Non-Binding Term Sheet Sample.pdf"  # Replace with your actual PDF file
-    content = read_pdf_with_tables(file_path)
-    print("Extracted PDF Content with Tables:\n")
-    print(len(content))
+# # Example usage
+# if __name__ == "__main__":
+#     file_path = "Non-Binding Term Sheet Sample.pdf"  # Replace with your actual PDF file
+#     content = read_pdf_with_tables(file_path)
+#     print("Extracted PDF Content with Tables:\n")
+#     print(len(content))

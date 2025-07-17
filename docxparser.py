@@ -21,7 +21,7 @@ def read_docx_with_tables(file_path):
 
 # Example usage
 if __name__ == "__main__":
-    path = "SHA Draft-Investor friendly(2).docx"  # Replace with your actual file path
+    path = "NON-DISCLOSURE AGREEMENT (NDA)(1).docx"  # Replace with your actual file path
     full_text = read_docx_with_tables(path)
     print("Full Document Content (including tables):\n")
-    print(len(full_text))
+    print(full_text)

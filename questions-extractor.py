@@ -9,7 +9,6 @@ from langchain_core.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import LLMChain
 # Prompt template for field extraction
-from langchain.prompts import PromptTemplate
 import os
 import json
 from dotenv import load_dotenv
