@@ -1,14 +1,11 @@
 import time
-from typing import Dict, List, Optional, TypedDict
+from typing import List, Optional, TypedDict
 from langgraph.graph import StateGraph, START, END
+from class_types import FieldExtractionResult, QuestionExtractionResult
 from pdfparser import read_pdf_with_tables
 from docxparser import read_docx_with_tables
-from google import genai
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains import LLMChain
-# Prompt template for field extraction
 import os
 import json
 from dotenv import load_dotenv
@@ -23,14 +20,6 @@ load_dotenv()
 TOKEN_LIMIT = 200
 
 
-class FieldExtractionResult(BaseModel):
-    field: str = Field(description="Field name that needs to be filled")
-    description: str = Field(description="Description of the field and its purpose")
-
-class QuestionExtractionResult(BaseModel):
-    question: str = Field(description="Question that needs to be answered")
-    fields_it_fills: FieldExtractionResult
-    description: str = Field(description="Description of the question and its purpose")
 
 # For a list of fields, use RootModel (Pydantic v2)
 FieldExtractionList = RootModel[list[FieldExtractionResult]]

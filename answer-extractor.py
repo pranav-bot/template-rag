@@ -1,10 +1,10 @@
 from typing import List, TypedDict
 from langchain_google_genai import ChatGoogleGenerativeAI
+from class_types import QuestionState
 from docxparser import read_docx_with_tables
 from vectordb import  store_chunks_in_vector_db, retrieve_from_vector_db
 from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, START, END
-from pydantic import Field, BaseModel
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,9 +14,6 @@ llm = ChatGoogleGenerativeAI(
     temperature=0.3,
 )
 
-class QuestionState(BaseModel):
-    question: str = Field(description="The question that needs to be answered")
-    answer: str = Field(description="The answer extracted from the relevant snippets")
 
 
 class AgentState(TypedDict):
