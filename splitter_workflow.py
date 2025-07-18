@@ -1,29 +1,27 @@
 import os
-from typing import List, TypedDict
+from typing import List, TypedDict, Dict
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langgraph.graph import StateGraph, START, END
-from pydantic import BaseModel, Field
 from docxparser import read_docx_with_tables
 from pdfparser import read_pdf_with_tables
+from class_types import BelongsToSection, Section
 from utils import split_document
-from vectordb import delete_vector_store, initialize_vector_db, retrieve_from_vector_db, store_section_in_vector_store
+from vectordb import delete_doc_from_vector_store, delete_vector_store, initialize_vector_db, retrieve_from_vector_db, store_section_in_vector_store
 
 
 TOKEN_LIMIT = 4096
+
+CHUNK_SIZE = 2000
+
+CHUNK_OVERLAP = 200
 
 LLM = ChatGoogleGenerativeAI(
     model="gemini-2.0-flash",
     temperature=0.3,
 )
 
-class BelongsToSection(BaseModel):
-    belongs: bool = Field(description="Indicates if the section belongs to the snippet or not")
-
-class Section(BaseModel):
-    title: str = Field(description="Title of the section")
-    content: str = Field(description="Content of the section")
 
 class AgentState(TypedDict):
     document_path: str
@@ -31,7 +29,7 @@ class AgentState(TypedDict):
     content_chunks: List[str]
     temp_result: Section
     vector_store_name: str
-    sections: List[Section]
+    sections: Dict[str, str]
 
 
 def content_loader_node(state: AgentState) -> AgentState:
@@ -86,13 +84,15 @@ def section_parser_node(state: AgentState) -> AgentState:
     for chunk in state['content_chunks']:
         print(f"Processing chunk: {chunk[:100]}...")
         state['temp_result'] = section_parser_chain.invoke({"chunk": chunk})
+        ccs_bool = cross_check_section(state['temp_result'], vectorstore_name=state['vector_store_name'], state=state, overlap=CHUNK_OVERLAP)
         if state['temp_result'].title!="" and state['temp_result'].content:
-
-            store_section_in_vector_store(state['temp_result'], name=state['vector_store_name'])
-            state['sections'].append(state['temp_result'])
+            if not ccs_bool:
+                store_section_in_vector_store(state['temp_result'], name=state['vector_store_name'])
+                state['sections'].update({state['temp_result'].title: state['temp_result'].content})
+            print(f"Stored section '{state['temp_result'].title}'")
         else:
             print("No valid section found in chunk, skipping.")
-        cross_check_section(state['temp_result'], vectorstore_name=state['vector_store_name'])
+        
     
     return state
 
@@ -124,12 +124,14 @@ cross_check_parser = PydanticOutputParser(pydantic_object=BelongsToSection)
 
 cross_check_chain = cross_check_prompt | LLM | cross_check_parser
 
-def cross_check_section(result: Section, vectorstore_name: str, overlap: int = 200) -> tuple[bool, str| None]:
+def cross_check_section(result: Section, vectorstore_name: str, state: AgentState, overlap: int = 200) -> bool:
     """Check if the section title is already present in the list of sections."""
     relevant_docs = retrieve_from_vector_db(query=result.content, name=vectorstore_name)
     print(relevant_docs)
     most_relevant_snippet = relevant_docs[0] if relevant_docs else None
     u_id = most_relevant_snippet.id if most_relevant_snippet else None
+    if not u_id:
+        return False
     print(f"id: {u_id}")
     if most_relevant_snippet:
         belongs_result = cross_check_chain.invoke({
@@ -142,8 +144,13 @@ def cross_check_section(result: Section, vectorstore_name: str, overlap: int = 2
         
         print(f"final result: {final_result}")
         if final_result:
-            return True, u_id
-    return False, u_id
+            delete_doc_from_vector_store(doc_id=u_id, name=vectorstore_name)
+            temp_result = result
+            temp_result.content = most_relevant_snippet.page_content + temp_result.content[CHUNK_OVERLAP:]
+            store_section_in_vector_store(temp_result, name=vectorstore_name)
+            state['sections'].update({most_relevant_snippet.metadata.get("title", ""): temp_result.content})
+            return True
+    return False
 
 graph = StateGraph(AgentState)
 graph.add_node('content_loader_node', content_loader_node)
@@ -163,7 +170,7 @@ if __name__ == "__main__":
         content_chunks=[],
         temp_result=Section(title="", content=""),
         vector_store_name="",
-        sections=[]
+        sections={}
     )
     final_state = app.invoke(initial_state)
     print(final_state['sections'])  # Output the extracted sections
