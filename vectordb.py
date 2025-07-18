@@ -6,16 +6,11 @@ from dotenv import load_dotenv
 from typing import Optional, Dict
 import os
 from langchain_community.docstore.in_memory import InMemoryDocstore
-from pydantic import BaseModel, Field
+from class_types import Section
 from utils import split_document
 import shutil
 from uuid import uuid4
 load_dotenv()
-
-
-class Section(BaseModel):
-    title: str = Field(description="Title of the section")
-    content: str = Field(description="Content of the section")
 
 
 embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
@@ -85,5 +80,15 @@ def delete_vector_store(name: str):
     if os.path.exists(vectorstore_path):
         shutil.rmtree(vectorstore_path)
         print(f"Deleted existing vector store: {vectorstore_path}")
+    else:
+        print(f"Vector store '{vectorstore_path}' does not exist.")
+
+def delete_doc_from_vector_store(doc_id: str, name: str):
+    vectorstore_path = os.path.join(VECTOR_INDEXES_DIR, name)
+    if os.path.exists(vectorstore_path):
+        vectorstore = FAISS.load_local(vectorstore_path, embedding_model, allow_dangerous_deserialization=True)
+        vectorstore.delete([doc_id])
+        vectorstore.save_local(vectorstore_path)
+        print(f"Deleted document with ID '{doc_id}' from vector store '{name}'")
     else:
         print(f"Vector store '{vectorstore_path}' does not exist.")
