@@ -14,8 +14,6 @@ llm = ChatGoogleGenerativeAI(
     temperature=0.3,
 )
 
-
-
 class AgentState(TypedDict):
     questions: List[QuestionState]
     content: str

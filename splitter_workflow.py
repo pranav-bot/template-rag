@@ -9,16 +9,17 @@ from pdfparser import read_pdf_with_tables
 from class_types import BelongsToSection, Section
 from utils import split_document
 from vectordb import delete_doc_from_vector_store, delete_vector_store, initialize_vector_db, retrieve_from_vector_db, store_section_in_vector_store
+#import time
+from dotenv import load_dotenv
+load_dotenv()
 
-
-TOKEN_LIMIT = 4096
-
-CHUNK_SIZE = 2000
+CHUNK_SIZE = 5000
 
 CHUNK_OVERLAP = 200
 
+
 LLM = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash",
+    model="gemini-2.0-flash-lite",
     temperature=0.3,
 )
 
@@ -41,7 +42,7 @@ def content_loader_node(state: AgentState) -> AgentState:
     elif file_type == 'docx':
         state['content'] = read_docx_with_tables(state['document_path'])
 
-    state['content_chunks'] = split_document(state['content'], chunk_size=200)
+    state['content_chunks'] = split_document(state['content'], chunk_size=CHUNK_SIZE)
 
     state['vector_store_name'] = _
     if os.path.exists(os.path.join("vector_indexes", _)):
@@ -57,11 +58,7 @@ You are a legal AI assistant. From the following contract text chunk, extract th
 - Section title (e.g., "Confidentiality", "Termination", etc.)
 - Full content of that section
 
-If no section is found, return output as JSON with title fields as empty string ad content with the content:
-{{
-  "title": "",
-  "content": ""
-}}
+If no section is found, return output as JSON with title field as empty string and content field with the input chunk Always return the content so that each chunk can be saved:
 
 Return output as JSON:
 {{
@@ -85,12 +82,13 @@ def section_parser_node(state: AgentState) -> AgentState:
         print(f"Processing chunk: {chunk[:100]}...")
         state['temp_result'] = section_parser_chain.invoke({"chunk": chunk})
         ccs_bool = cross_check_section(state['temp_result'], vectorstore_name=state['vector_store_name'], state=state, overlap=CHUNK_OVERLAP)
-        if state['temp_result'].title!="" and state['temp_result'].content:
-            if not ccs_bool:
-                store_section_in_vector_store(state['temp_result'], name=state['vector_store_name'])
-                state['sections'].update({state['temp_result'].title: state['temp_result'].content})
+        if not ccs_bool:
+            store_section_in_vector_store(state['temp_result'], name=state['vector_store_name'])
+            state['sections'].update({state['temp_result'].title: state['temp_result'].content})
             print(f"Stored section '{state['temp_result'].title}'")
+            #time.sleep(70)
         else:
+            print(state['temp_result'].title, state['temp_result'].content)
             print("No valid section found in chunk, skipping.")
         
     
@@ -141,6 +139,7 @@ def cross_check_section(result: Section, vectorstore_name: str, state: AgentStat
             "snippet_title": most_relevant_snippet.metadata.get("title", "")
         })
         final_result = belongs_result.belongs
+        #time.sleep(70)
         
         print(f"final result: {final_result}")
         if final_result:
@@ -165,7 +164,7 @@ app = graph.compile()
 if __name__ == "__main__":
     # Example usage
     initial_state = AgentState(
-        document_path="testting_docs/NON-DISCLOSURE AGREEMENT (NDA)(1).docx",
+        document_path="testting_docs/SHA Draft-Investor friendly(2).docx",
         content="",
         content_chunks=[],
         temp_result=Section(title="", content=""),
@@ -173,4 +172,10 @@ if __name__ == "__main__":
         sections={}
     )
     final_state = app.invoke(initial_state)
-    print(final_state['sections'])  # Output the extracted sections
+    print(final_state['sections'])
+
+    # Save sections to a txt file
+    with open("extracted_sections.txt", "w", encoding="utf-8") as f:
+        for title, content in final_state['sections'].items():
+            f.write(f"=== {title} ===\n{content}\n\n")
+    print("Sections saved to extracted_sections.txt")

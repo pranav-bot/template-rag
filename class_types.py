@@ -19,3 +19,6 @@ class QuestionExtractionResult(BaseModel):
 class QuestionState(BaseModel):
     question: str = Field(description="The question that needs to be answered")
     answer: str = Field(description="The answer extracted from the relevant snippets")
+
+class Section2(BaseModel):
+    title: str = Field(description="Title of the section")
