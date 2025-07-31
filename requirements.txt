@@ -6,3 +6,5 @@ dotenv
 typing-extensions
 python-docx
 fastapi
+uvicorn
+pydantic
