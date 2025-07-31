@@ -10,6 +10,7 @@ from class_types import Section
 from utils import split_document
 import shutil
 from uuid import uuid4
+import json
 load_dotenv()
 
 
@@ -92,3 +93,24 @@ def delete_doc_from_vector_store(doc_id: str, name: str):
         print(f"Deleted document with ID '{doc_id}' from vector store '{name}'")
     else:
         print(f"Vector store '{vectorstore_path}' does not exist.")
+
+def store_json_to_vectorstore(json_path: str, name: str):
+    """
+    Store JSON data into a vector store.
+    The JSON should be structured as a list of sections with 'title' and 'content'.
+    """
+    os.makedirs(VECTOR_INDEXES_DIR, exist_ok=True)
+    vectorstore_path = os.path.join(VECTOR_INDEXES_DIR, name)
+    
+    if not os.path.exists(vectorstore_path):
+        initialize_vector_db(name)
+    
+    vectorstore = FAISS.load_local(vectorstore_path, embedding_model, allow_dangerous_deserialization=True)
+    
+    with open(json_path, 'r') as f:
+        sections = json.load(f)
+    
+    documents = [Document(page_content=section['content'], metadata={"title": section['title']}) for section in sections]
+    vectorstore.add_documents(documents, id=[str(uuid4()) for _ in documents])
+    vectorstore.save_local(vectorstore_path)
+    print(f"Stored JSON data to vector store '{name}'")
